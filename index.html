@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trip Dreams</title>
+<meta name="description" content="Plan family trips, save toward each one, and keep the memories. Everything stays on this device.">
+<meta name="theme-color" content="#1b2530">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo">🌅</span><div><h1>Trip Dreams</h1><small>Save up. Go together.</small></div></div>
+  <button class="icon-btn" id="btnSettings" aria-label="Settings & backup" title="Settings & backup">⚙️</button>
+</header>
+
+<main id="main">
+  <!-- HOME -->
+  <section class="view" id="v-home">
+    <div class="hero card" id="nextAdv"></div>
+    <div class="stats">
+      <div class="stat card"><span>Total saved</span><b id="stSaved">$0</b></div>
+      <div class="stat card"><span>Still to save</span><b id="stLeft">$0</b></div>
+      <div class="stat card"><span>Trips</span><b id="stCount">0</b></div>
+    </div>
+    <div class="home-grid">
+      <div class="card map-card"><div class="card-h"><h2>Your map</h2><div class="legend" id="legendHome"></div></div><div class="map" id="mapHome"></div><div class="map-note hidden" id="noteHome"></div></div>
+      <div class="card"><div class="card-h"><h2>Trips by date</h2><button class="btn small" data-new>＋ New trip</button></div><div class="trip-list" id="listHome"></div></div>
+    </div>
+  </section>
+
+  <!-- TRIPS -->
+  <section class="view hidden" id="v-trips">
+    <div class="row-h"><h2>All trips</h2><button class="btn" data-new>＋ New trip</button></div>
+    <div class="filters" id="filters"></div>
+    <div class="trip-grid" id="listTrips"></div>
+  </section>
+
+  <!-- MAP -->
+  <section class="view hidden" id="v-map">
+    <form class="search" id="mapSearch" autocomplete="off">
+      <input id="mapQ" type="search" placeholder="Search a place (e.g. Maui, Yosemite)…" enterkeyhint="search">
+      <button class="btn" type="submit">Search</button>
+    </form>
+    <div class="results hidden" id="mapResults"></div>
+    <div class="pick-banner hidden" id="pickBanner">📍 Tap the map to set this trip's place <button class="btn small ghost" id="pickCancel">Cancel</button></div>
+    <div class="map big" id="mapBig"></div>
+    <div class="map-note hidden" id="noteBig"></div>
+    <p class="hint">Tap anywhere on the map to drop a pin and start a trip there.</p>
+  </section>
+
+  <!-- MEMORIES -->
+  <section class="view hidden" id="v-mem">
+    <div class="row-h"><h2>Memory wall</h2></div>
+    <p class="hint">Trips marked <b>Done</b> land here. Add a memory note to each one.</p>
+    <div class="mem-wall" id="memWall"></div>
+  </section>
+</main>
+
+<nav class="tabs" id="tabs">
+  <button data-v="home" class="on"><span>🏠</span>Home</button>
+  <button data-v="trips"><span>🧳</span>Trips</button>
+  <button data-v="map"><span>🗺️</span>Map</button>
+  <button data-v="mem"><span>📸</span>Memories</button>
+</nav>
+
+<!-- TRIP SHEET -->
+<div class="sheet-wrap hidden" id="sheetWrap">
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sName">
+    <div class="sheet-top">
+      <button class="icon-btn" id="sheetClose" aria-label="Close">✕</button>
+      <span class="saved-tag" id="savedTag">Saved on this device</span>
+      <button class="icon-btn danger" id="tripDelete" aria-label="Delete trip" title="Delete trip">🗑️</button>
+    </div>
+    <div class="example-tag hidden" id="exampleTag">EXAMPLE TRIP: made-up numbers so you can see how it works. Delete it anytime with 🗑️.</div>
+
+    <div class="sec basics">
+      <button class="emoji-btn" id="tEmojiBtn" aria-label="Pick an icon">🏝️</button>
+      <div class="grow">
+        <input id="tName" class="title-in" placeholder="Trip name (e.g. Beach week)" maxlength="80">
+        <div class="place-line"><span id="tPlace" class="muted">No place yet</span></div>
+      </div>
+    </div>
+    <div class="emoji-grid hidden" id="emojiGrid"></div>
+
+    <div class="sec">
+      <label class="lbl">Place</label>
+      <form class="search" id="placeSearch" autocomplete="off">
+        <input id="placeQ" type="search" placeholder="Search a place…" enterkeyhint="search">
+        <button class="btn" type="submit">Search</button>
+        <button class="btn ghost" type="button" id="pickOnMap" title="Tap the map instead">📍 Map</button>
+      </form>
+      <div class="results hidden" id="placeResults"></div>
+    </div>
+
+    <div class="sec two">
+      <div><label class="lbl" for="tDate">Target date</label><input id="tDate" type="date"></div>
+      <div><label class="lbl">Status</label><div class="seg" id="tStatus"></div></div>
+    </div>
+
+    <div class="sec">
+      <label class="lbl">Who's going</label>
+      <div class="chips" id="tWho"></div>
+      <form class="add-row" id="whoAdd"><input id="whoNew" placeholder="Add someone (e.g. Grandma)" maxlength="40"><button class="btn small" type="submit">Add</button></form>
+    </div>
+
+    <div class="sec">
+      <label class="lbl">Estimated cost</label>
+      <div class="costs" id="tCosts"></div>
+      <div class="cost-total">Total <b id="tTotal">$0</b></div>
+    </div>
+
+    <div class="sec save-sec">
+      <label class="lbl">Savings goal</label>
+      <div class="save-grid">
+        <div class="ring-box" id="ringBox"></div>
+        <div class="plan" id="tPlan"></div>
+      </div>
+      <form class="add-row dep" id="depAdd">
+        <input id="depAmt" type="number" inputmode="decimal" step="0.01" placeholder="Amount $" aria-label="Deposit amount">
+        <input id="depDate" type="date" aria-label="Deposit date">
+        <input id="depNote" placeholder="Note (optional)" maxlength="60">
+        <button class="btn" type="submit">＋ Log deposit</button>
+      </form>
+      <p class="tiny">Tip: a negative amount logs money you took back out.</p>
+      <div class="deps" id="tDeps"></div>
+    </div>
+
+    <div class="sec">
+      <div class="lbl-row"><label class="lbl">Kid-friendly checklist</label><button class="btn small ghost" id="ckDefaults">＋ Toddler basics</button></div>
+      <div class="checklist" id="tCheck"></div>
+      <form class="add-row" id="ckAdd"><input id="ckNew" placeholder="Add an item" maxlength="80"><button class="btn small" type="submit">Add</button></form>
+    </div>
+
+    <div class="sec">
+      <label class="lbl" for="tNotes">Notes</label>
+      <textarea id="tNotes" rows="4" placeholder="Ideas, places to eat, things Ava might love…"></textarea>
+    </div>
+    <div class="sec mem-only hidden" id="memSec">
+      <label class="lbl" for="tMemory">Memory note</label>
+      <textarea id="tMemory" rows="3" placeholder="Best moment of the trip…"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="sheet-wrap hidden" id="setWrap">
+  <div class="sheet small-sheet" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="sheet-top"><button class="icon-btn" id="setClose" aria-label="Close">✕</button><b>Settings &amp; backup</b><span></span></div>
+    <div class="sec">
+      <label class="lbl">Family (default for new trips)</label>
+      <input id="sFamily" placeholder="Daniel, Jackie, Ava">
+      <p class="tiny">Separate names with commas.</p>
+    </div>
+    <div class="sec">
+      <label class="lbl" for="sPayday">A recent payday (optional)</label>
+      <input id="sPayday" type="date">
+      <p class="tiny">Paychecks are counted every 2 weeks from this date. Leave blank to just divide the time left by 2 weeks.</p>
+    </div>
+    <div class="sec">
+      <label class="lbl">Backup</label>
+      <div class="btn-row"><button class="btn" id="bkSave">⬇️ Save backup file</button><label class="btn ghost file-btn">⬆️ Restore from file<input type="file" id="bkLoad" accept=".json,.tripdreams,application/json"></label></div>
+      <p class="tiny">Your trips live only in this browser on this device. Nothing is uploaded, and there are no accounts or tracking. Save a backup now and then, and use it to move trips to another device. Clearing browser data erases them.</p>
+      <p class="tiny" id="bkMsg"></p>
+    </div>
+    <div class="sec">
+      <p class="tiny">Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (tiles from the OpenStreetMap tile servers). Place search by Nominatim (only the words you search are sent). Trip Dreams v1.0</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
